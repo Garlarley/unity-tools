@@ -6,7 +6,7 @@ namespace MD
     /// MDSingleton can create an instance if none exists when requested.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class MDSingleton<T> : MonoBehaviour where T : Component
+    public abstract class Singleton<T> : MonoBehaviour where T : Component
     {
         private static T instance;
         private static bool createIfNone = false;
