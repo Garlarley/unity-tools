@@ -1,7 +1,7 @@
 # unity-tools
 It contains some useful tools for unity that I think could be re-used. 
 
-# Global/MDSingleton
+# Singleton
 
 The MDSingleton class is a Unity framework utility designed to facilitate the creation and management of Singleton objects within a Unity scene. A Singleton is a design pattern that ensures there is only one instance of a particular class in the application at any given time. This pattern is often used for manager or controller classes to ensure they have a single point of access throughout the application's lifecycle.
 
