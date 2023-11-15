@@ -1,5 +1,5 @@
 // Function to slice the mesh
-proc sliceMesh(float $cellSize) {
+global proc sliceMesh(float $cellSize) {
     string $selectionList[] = `ls -sl -fl`;
     if(size($selectionList) == 0) {
         warning "You must select a mesh.";
@@ -33,8 +33,8 @@ global proc createSliceMeshUI() {
     if(`window -exists sliceMeshWindow`) deleteUI sliceMeshWindow;
     window -title "Slice Mesh" sliceMeshWindow;
     columnLayout -adjustableColumn true;
-    floatFieldGrp -label "Cell Size" -numberOfFields 1 "cellSizeField";
-    button -label "Slice Mesh" -command "sliceMesh(floatFieldGrp -query -value1 cellSizeField)";
+    string $cellSizeField = `floatFieldGrp -label "Cell Size" -numberOfFields 1`;
+    button -label "Slice Mesh" -command ("sliceMesh(`floatFieldGrp -query -value1 " + $cellSizeField + "`)");
     showWindow sliceMeshWindow;
 }
 
