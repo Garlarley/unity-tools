@@ -1,5 +1,9 @@
+global string $cellSizeField; // Declare a global variable to hold the floatFieldGrp name
+
 // Function to slice the mesh
-global proc sliceMesh(float $cellSize) {
+global proc sliceMesh() {
+    float $cellSize = `floatFieldGrp -query -value1 $cellSizeField`; // Use the global variable to query the value
+
     string $selectionList[] = `ls -sl -fl`;
     if(size($selectionList) == 0) {
         warning "You must select a mesh.";
@@ -33,8 +37,8 @@ global proc createSliceMeshUI() {
     if(`window -exists sliceMeshWindow`) deleteUI sliceMeshWindow;
     window -title "Slice Mesh" sliceMeshWindow;
     columnLayout -adjustableColumn true;
-    string $cellSizeField = `floatFieldGrp -label "Cell Size" -numberOfFields 1`;
-    button -label "Slice Mesh" -command ("sliceMesh(`floatFieldGrp -query -value1 " + $cellSizeField + "`)");
+    $cellSizeField = `floatFieldGrp -label "Cell Size" -numberOfFields 1`; // Assign the floatFieldGrp to the global variable
+    button -label "Slice Mesh" -command "sliceMesh()"; // Call the sliceMesh proc without arguments
     showWindow sliceMeshWindow;
 }
 
