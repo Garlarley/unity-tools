@@ -1,0 +1,42 @@
+// Function to slice the mesh
+proc sliceMesh(float $cellSize) {
+    string $selectionList[] = `ls -sl -fl`;
+    if(size($selectionList) == 0) {
+        warning "You must select a mesh.";
+        return;
+    }
+
+    string $selectedMesh = $selectionList[0];
+    float $boundingBox[] = `polyEvaluate -b $selectedMesh`;
+    
+    // Calculate the number of cuts needed
+    int $numCutsX = (int) (($boundingBox[3] - $boundingBox[0]) / $cellSize);
+    int $numCutsY = (int) (($boundingBox[4] - $boundingBox[1]) / $cellSize);
+    int $numCutsZ = (int) (($boundingBox[5] - $boundingBox[2]) / $cellSize);
+
+    // Slice in X direction
+    for($i = 1; $i <= $numCutsX; $i++) {
+        polyCut -pc ($boundingBox[0] + $i * $cellSize) $boundingBox[1] $boundingBox[2] -ro 0 0 0 -es 0 1 0 $selectedMesh;
+    }
+    // Slice in Y direction
+    for($i = 1; $i <= $numCutsY; $i++) {
+        polyCut -pc $boundingBox[0] ($boundingBox[1] + $i * $cellSize) $boundingBox[2] -ro 0 0 0 -es 1 0 0 $selectedMesh;
+    }
+    // Slice in Z direction
+    for($i = 1; $i <= $numCutsZ; $i++) {
+        polyCut -pc $boundingBox[0] $boundingBox[1] ($boundingBox[2] + $i * $cellSize) -ro 0 0 0 -es 0 0 1 $selectedMesh;
+    }
+}
+
+// Function to create UI
+global proc createSliceMeshUI() {
+    if(`window -exists sliceMeshWindow`) deleteUI sliceMeshWindow;
+    window -title "Slice Mesh" sliceMeshWindow;
+    columnLayout -adjustableColumn true;
+    floatFieldGrp -label "Cell Size" -numberOfFields 1 "cellSizeField";
+    button -label "Slice Mesh" -command "sliceMesh(floatFieldGrp -query -value1 cellSizeField)";
+    showWindow sliceMeshWindow;
+}
+
+// Call the function to create the UI
+createSliceMeshUI();
