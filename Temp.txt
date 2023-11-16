@@ -6,25 +6,28 @@ def get_face_center(face_name):
     mesh_name = split_name[0]
     face_index = int(split_name[1][2:-1])  # Assumes face_name is like 'pCube1.f[0]'
 
-    # Get the MObject for the mesh
+    # Get the MDagPath for the mesh shape node
     selectionList = OpenMaya.MSelectionList()
     selectionList.add(mesh_name)
-    mesh_mobject = selectionList.getDependNode(0)
-    mesh_fn = OpenMaya.MFnMesh(mesh_mobject)
+    dag_path = selectionList.getDagPath(0)
+    dag_path.extendToShape()
 
-    # Get the face's vertices
-    face_iter = OpenMaya.MItMeshPolygon(mesh_mobject)
+    mesh_fn = OpenMaya.MFnMesh(dag_path)
+
+    # Create an iterator for the specified face
+    face_iter = OpenMaya.MItMeshPolygon(dag_path)
+
+    # Calculate the centroid of the face
+    centroid = OpenMaya.MPoint()
     face_iter.setIndex(face_index)
     points = OpenMaya.MPointArray()
     face_iter.getPoints(points, OpenMaya.MSpace.kWorld)
 
-    # Calculate the centroid
-    centroid = OpenMaya.MPoint()
-    num_points = points.length()
-    for i in range(num_points):
+    for i in range(points.length()):
         centroid += points[i]
-    centroid /= num_points
 
+    centroid /= points.length()
+    
     return (centroid.x, centroid.y, centroid.z)
 
 # Example usage
