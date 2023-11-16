@@ -1,41 +1,25 @@
 import maya.cmds as cmds
 
 def create_mesh_from_selected_faces(new_mesh_name='clone'):
-    # Ensure the selection is appropriate
-    selected_faces = cmds.ls(sl=True, fl=True)
-    if not selected_faces:
-        cmds.warning("No faces selected.")
-        return None
+    # Duplicate the selected faces to create a new object that includes only those faces
+    duplicated_faces = cmds.duplicate(rr=True)
+    # The duplicate command returns a list of all new objects created (in this case, just one object)
+    duplicated_object = duplicated_faces[0]
     
-    # Get the shape node of the selected object
-    shape_node = cmds.ls(selected_faces[0], o=True)
+    # Separate the faces into individual objects
+    cmds.polySeparate(duplicated_object, ch=False)
     
-    # Duplicate the entire object
-    duplicated_object = cmds.duplicate(shape_node, rr=True)
+    # Find the new object that contains the duplicated faces
+    # It will be the last object created, assuming that no other operations were performed in between
+    new_objects = cmds.ls(type='transform', long=True)
+    new_mesh_transform = new_objects[-1]
     
-    # Use the selection list to delete the non-selected faces from the duplicate
-    all_faces = cmds.ls(duplicated_object[0] + '.f[*]', fl=True)
-    faces_to_delete = list(set(all_faces) - set(selected_faces))
-    cmds.delete(faces_to_delete)
+    # Rename the new mesh transform node
+    new_mesh_transform = cmds.rename(new_mesh_transform, new_mesh_name)
     
-    # Now separate the remaining faces into a new object
-    new_meshes = cmds.polySeparate(duplicated_object, ch=False)
-    
-    # The desired mesh should be the last one in the list, but we will check the number of faces to be sure
-    new_mesh = None
-    for mesh in new_meshes:
-        if cmds.polyEvaluate(mesh, face=True) > 0:
-            new_mesh = mesh
-            break
-    
-    # If a valid mesh was found, rename it
-    if new_mesh:
-        new_mesh = cmds.rename(new_mesh, new_mesh_name)
-    
-    return new_mesh
+    return new_mesh_transform
 
 # Usage example:
 # Select the faces you want to make into a new mesh before running this function
 new_mesh = create_mesh_from_selected_faces('clone')
-if new_mesh:
-    print("New mesh created:", new_mesh)
+print("New mesh created:", new_mesh)
