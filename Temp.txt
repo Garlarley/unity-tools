@@ -1,7 +1,26 @@
-import maya.mel as mel
+import maya.cmds as cmds
 
-# Your MEL command as a string
-mel_command = 'expandPolyGroupSelection; polyCleanupArgList 4 { "0","1","1","0","0","0","0","0","1","1e-05","0","1e-05","0","1e-05","0","-2","1","0" };'
+def create_slice_mesh_ui():
+    window_name = "sliceMeshWindow"
+    if cmds.window(window_name, exists=True):
+        cmds.deleteUI(window_name)
 
-# Evaluate the MEL command
-mel.eval(mel_command)
+    cmds.window(window_name, title="Slice Mesh")
+    cmds.columnLayout(adjustableColumn=True)
+    cell_size_field = cmds.floatFieldGrp(label="Cell Size", numberOfFields=1, value1=5)
+    auto_remove_seams_checkbox = cmds.checkBox(label="Auto Remove Seams", value=False)
+
+    def slice_mesh_wrapper(*args):
+        cell_size = cmds.floatFieldGrp(cell_size_field, query=True, value1=True)
+        auto_remove_seams = cmds.checkBox(auto_remove_seams_checkbox, query=True, value=True)
+        # Assuming 'slice_mesh' is a function that takes 'cell_size' and 'auto_remove_seams'
+        slice_mesh(cell_size, auto_remove_seams) 
+
+    cmds.button(label="Slice Mesh", command=slice_mesh_wrapper)
+    cmds.showWindow(window_name)
+
+# Assuming you have a function defined as 'slice_mesh(cell_size, auto_remove_seams)'
+# If not, you will need to define it or adjust the parameters of the existing 'slice_mesh' function to accept 'auto_remove_seams'
+
+# Call the function to create the UI
+create_slice_mesh_ui()
