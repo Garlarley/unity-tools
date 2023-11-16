@@ -1,31 +1,47 @@
-import maya.cmds as cmds
+from maya.api import OpenMaya
 
-# Replace 'extractedMesh' with the name of your extracted mesh
-extractedMesh = 'extractedMesh'
-# Replace 'originalMesh' with the name of your original terrain mesh
-originalMesh = 'originalMesh'
+def update_face_index(mesh_name, old_centroid):
+    # Ensure the mesh has the '.f' suffix indicating face components
+    if ".f" not in mesh_name:
+        mesh_name += ".f[*]"
 
-# Unlock the normals on both meshes
-cmds.polyNormalPerVertex(extractedMesh, unFreezeNormal=True)
-cmds.polyNormalPerVertex(originalMesh, unFreezeNormal=True)
+    # Get the MDagPath for the mesh shape node
+    selectionList = OpenMaya.MSelectionList()
+    selectionList.add(mesh_name)
+    dag_path = selectionList.getDagPath(0)
+    dag_path.extendToShape()
 
-# Soften the edge normals on both meshes
-cmds.polySoftEdge(extractedMesh, angle=180)
-cmds.polySoftEdge(originalMesh, angle=180)
+    # Initialize the MFnMesh function set
+    mesh_fn = OpenMaya.MFnMesh(dag_path)
 
-# Average normals along the border edges if necessary
-# This step may require you to specify the border edges explicitly
-borderEdges = cmds.polyListComponentConversion(
-    [extractedMesh, originalMesh], 
-    fromFace=True, 
-    toEdge=True, 
-    border=True
-)
-borderEdges = cmds.filterExpand(borderEdges, selectionMask=32, expand=True)
-if borderEdges:
-    cmds.polyAverageNormal(borderEdges, averageNormalType=0, averageNormalArea=2)
+    # Create an iterator for all faces
+    face_iter = OpenMaya.MItMeshPolygon(dag_path)
 
-# Merge vertices if they are separate
-# This step assumes the vertices are close enough to merge without altering the mesh form
-cmds.select([extractedMesh, originalMesh])
-cmds.polyMergeVertex(d=0.01, am=1, ch=True)
+    closest_face_index = None
+    closest_distance = float('inf')
+
+    # Iterate over all faces to find the closest one to the old centroid
+    while not face_iter.isDone():
+        points = face_iter.getPoints(OpenMaya.MSpace.kWorld)
+
+        # Calculate the centroid of the current face
+        centroid = OpenMaya.MPoint()
+        num_points = len(points)
+        for point in points:
+            centroid += point
+        centroid /= num_points
+
+        # Compute the distance to the old centroid
+        distance = (centroid - old_centroid).length()
+        if distance < closest_distance:
+            closest_distance = distance
+            closest_face_index = face_iter.index()
+
+        face_iter.next(None)
+
+    return closest_face_index
+
+# Example usage:
+# After a merge, get the new face index closest to the old centroid
+old_centroid = OpenMaya.MPoint(centroid_x, centroid_y, centroid_z)  # Replace with your actual values
+new_face_index = update_face_index('yourMeshName', old_centroid)
