@@ -1,26 +1,40 @@
 import maya.cmds as cmds
+import math
 
-def create_slice_mesh_ui():
-    window_name = "sliceMeshWindow"
-    if cmds.window(window_name, exists=True):
-        cmds.deleteUI(window_name)
+# Your array of clones and child cells
+clones = ['clone1', 'clone2', 'clone3']  # Replace with your actual clone names
+child_cells = ['cell1', 'cell2', 'cell3']  # Replace with your actual child cell names
 
-    cmds.window(window_name, title="Slice Mesh")
-    cmds.columnLayout(adjustableColumn=True)
-    cell_size_field = cmds.floatFieldGrp(label="Cell Size", numberOfFields=1, value1=5)
-    auto_remove_seams_checkbox = cmds.checkBox(label="Auto Remove Seams", value=False)
+def get_pivot_position(obj_name):
+    # This function returns the world space position of the object's pivot
+    return cmds.xform(obj_name, query=True, rotatePivot=True, worldSpace=True)
 
-    def slice_mesh_wrapper(*args):
-        cell_size = cmds.floatFieldGrp(cell_size_field, query=True, value1=True)
-        auto_remove_seams = cmds.checkBox(auto_remove_seams_checkbox, query=True, value=True)
-        # Assuming 'slice_mesh' is a function that takes 'cell_size' and 'auto_remove_seams'
-        slice_mesh(cell_size, auto_remove_seams) 
+def calculate_distance(pos1, pos2):
+    # This function calculates the distance between two points in space
+    return math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2 + (pos1[2] - pos2[2]) ** 2)
 
-    cmds.button(label="Slice Mesh", command=slice_mesh_wrapper)
-    cmds.showWindow(window_name)
+# Iterate through each clone
+for clone in clones:
+    closest_cell = None
+    min_distance = None
 
-# Assuming you have a function defined as 'slice_mesh(cell_size, auto_remove_seams)'
-# If not, you will need to define it or adjust the parameters of the existing 'slice_mesh' function to accept 'auto_remove_seams'
+    # Get the pivot position of the clone
+    clone_pivot = get_pivot_position(clone)
 
-# Call the function to create the UI
-create_slice_mesh_ui()
+    # Search for the closest child_cell
+    for child_cell in child_cells:
+        # Get the pivot position of the child cell
+        child_cell_pivot = get_pivot_position(child_cell)
+        
+        # Calculate the distance between clone and child cell
+        distance = calculate_distance(clone_pivot, child_cell_pivot)
+
+        # If this is the first cell checked or if this cell is closer than the previous closest, update the closest cell
+        if min_distance is None or distance < min_distance:
+            closest_cell = child_cell
+            min_distance = distance
+
+    # Parent the clone to the closest child cell
+    if closest_cell:
+        cmds.parent(clone, closest_cell)
+        print(f"Parented {clone} to {closest_cell} which was the closest with a distance of {min_distance}")
