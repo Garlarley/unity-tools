@@ -1,39 +1,33 @@
 import maya.api.OpenMaya as OpenMaya
 
-def get_face_center(face_name):
-    # Parse the face name to get the mesh name and face index
-    split_name = face_name.split('.')
-    mesh_name = split_name[0]
-    face_index = int(split_name[1][2:-1])  # Assumes face_name is like 'pCube1.f[0]'
-
-    # Get the MDagPath for the mesh shape node
-    selectionList = OpenMaya.MSelectionList()
-    selectionList.add(mesh_name)
-    dag_path = selectionList.getDagPath(0)
+def get_bounding_box(mesh_name):
+    # Get the selection list
+    selection_list = OpenMaya.MSelectionList()
+    selection_list.add(mesh_name)
+    
+    # Get the MDagPath object for the mesh
+    dag_path = selection_list.getDagPath(0)
     dag_path.extendToShape()
-
-    # Initialize the MFnMesh function set
-    mesh_fn = OpenMaya.MFnMesh(dag_path)
-
-    # Create an iterator for the specified face
-    face_iter = OpenMaya.MItMeshPolygon(dag_path)
-
-    # Jump to the specified face in the iterator
-    face_iter.setIndex(face_index)
-
-    # Get the points (vertices) of the face in world space
-    points = face_iter.getPoints(OpenMaya.MSpace.kWorld)
-
-    # Calculate the centroid of the face
-    centroid = OpenMaya.MPoint()
-    num_points = points.length()
-    for i in range(num_points):
-        centroid += points[i]
-    centroid /= num_points
-
-    return (centroid.x, centroid.y, centroid.z)
+    
+    # Get the MFnDagNode function set for the mesh
+    dag_node = OpenMaya.MFnDagNode(dag_path)
+    
+    # Get the bounding box
+    bounding_box = dag_node.boundingBox
+    
+    # Get the min and max points of the bounding box
+    min_point = bounding_box.min
+    max_point = bounding_box.max
+    
+    # Return the bounding box as a dictionary
+    bbox = {
+        'minX': min_point.x, 'minY': min_point.y, 'minZ': min_point.z,
+        'maxX': max_point.x, 'maxY': max_point.y, 'maxZ': max_point.z
+    }
+    
+    return bbox
 
 # Example usage
-face_name = 'pCube1.f[0]'  # Replace with your actual face name
-centroid = get_face_center(face_name)
-print("Centroid of the face is:", centroid)
+mesh_name = 'pCube1'  # Replace with your actual mesh name
+bbox = get_bounding_box(mesh_name)
+print("Bounding Box:", bbox)
