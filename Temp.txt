@@ -1,68 +1,23 @@
 import maya.cmds as cmds
 
-def slice_and_separate_mesh(cell_size):
-    selection_list = cmds.ls(selection=True, flatten=True)
-    
-    if not selection_list:
-        cmds.warning("You must select a mesh.")
-        return
-    
-    selected_mesh = selection_list[0]
-    bounding_box = cmds.exactWorldBoundingBox(selected_mesh)
-    
-    # Calculate the number of cuts needed
-    num_cuts_x = int((bounding_box[3] - bounding_box[0]) / cell_size)
-    num_cuts_y = int((bounding_box[4] - bounding_box[1]) / cell_size)
-    
-    # Perform slicing operations
-    for i in range(1, num_cuts_x + 1):
-        cmds.polyCut(selected_mesh, pc=[bounding_box[0] + i * cell_size, 0, 0], ro=[0, 0, 0], es=[0, 1, 0])
-    for i in range(1, num_cuts_y + 1):
-        cmds.polyCut(selected_mesh, pc=[0, bounding_box[1] + i * cell_size, 0], ro=[0, 0, 0], es=[1, 0, 0])
+def get_face_center(face_name):
+    # Get the vertices of the face
+    vertices = cmds.polyListComponentConversion(face_name, toVertex=True)
+    vertices = cmds.filterExpand(vertices, selectionMask=31)  # Filter for vertices
 
-    # The slicing is done, now we need to separate the faces into new meshes
-    for x in range(num_cuts_x):
-        for y in range(num_cuts_y):
-            # Calculate the bounding box for the current cell
-            min_x = bounding_box[0] + x * cell_size
-            max_x = min_x + cell_size
-            min_y = bounding_box[1] + y * cell_size
-            max_y = min_y + cell_size
-            
-            # Select faces within the bounding box of the current cell
-            faces_in_cell = []
-            for face_index in range(cmds.polyEvaluate(selected_mesh, face=True)):
-                face = f"{selected_mesh}.f[{face_index}]"
-                centroid = cmds.polyEvaluate(face, centroid=True)
-                if (min_x <= centroid[0] <= max_x) and (min_y <= centroid[1] <= max_y):
-                    faces_in_cell.append(face)
-            
-            if faces_in_cell:
-                # Select the faces for the current cell
-                cmds.select(faces_in_cell)
-                
-                # Duplicate the faces and separate them into a new mesh
-                duplicated_faces = cmds.polyChipOff(faces_in_cell, dup=True, ch=False)
-                new_mesh = cmds.polySeparate(duplicated_faces, ch=False)[0]
-                
-                # Rename the new mesh to the format "Cell_X_Y"
-                new_mesh_name = f"Cell_{x}_{y}"
-                cmds.rename(new_mesh, new_mesh_name)
+    # Calculate the average position of all vertices to find the centroid
+    x, y, z = 0.0, 0.0, 0.0
+    for vertex in vertices:
+        position = cmds.pointPosition(vertex, world=True)
+        x += position[0]
+        y += position[1]
+        z += position[2]
 
-def create_slice_mesh_ui():
-    window_name = "sliceMeshWindow"
-    if cmds.window(window_name, exists=True):
-        cmds.deleteUI(window_name)
-    
-    cmds.window(window_name, title="Slice Mesh")
-    cmds.columnLayout(adjustableColumn=True)
-    cell_size_field = cmds.floatFieldGrp(label="Cell Size", numberOfFields=1)
-    
-    def slice_mesh_wrapper(*_):
-        cell_size = cmds.floatFieldGrp(cell_size_field, query=True, value1=True)
-        slice_and_separate_mesh(cell_size)
-    
-    cmds.button(label="Slice Mesh", command=slice_mesh_wrapper)
-    cmds.showWindow(window_name)
+    # Average out the sum of positions
+    centroid = (x / len(vertices), y / len(vertices), z / len(vertices))
+    return centroid
 
-create_slice_mesh_ui()
+# Usage example:
+face_name = 'yourMesh.f[faceIndex]'  # Replace with your mesh name and face index
+center = get_face_center(face_name)
+print("Center of the face is:", center)
