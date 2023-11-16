@@ -1,23 +1,41 @@
 import maya.cmds as cmds
 
-def get_face_center(face_name):
-    # Get the vertices of the face
-    vertices = cmds.polyListComponentConversion(face_name, toVertex=True)
-    vertices = cmds.filterExpand(vertices, selectionMask=31)  # Filter for vertices
-
-    # Calculate the average position of all vertices to find the centroid
-    x, y, z = 0.0, 0.0, 0.0
-    for vertex in vertices:
-        position = cmds.pointPosition(vertex, world=True)
-        x += position[0]
-        y += position[1]
-        z += position[2]
-
-    # Average out the sum of positions
-    centroid = (x / len(vertices), y / len(vertices), z / len(vertices))
-    return centroid
+def create_mesh_from_selected_faces(new_mesh_name='clone'):
+    # Ensure the selection is appropriate
+    selected_faces = cmds.ls(sl=True, fl=True)
+    if not selected_faces:
+        cmds.warning("No faces selected.")
+        return None
+    
+    # Get the shape node of the selected object
+    shape_node = cmds.ls(selected_faces[0], o=True)
+    
+    # Duplicate the entire object
+    duplicated_object = cmds.duplicate(shape_node, rr=True)
+    
+    # Use the selection list to delete the non-selected faces from the duplicate
+    all_faces = cmds.ls(duplicated_object[0] + '.f[*]', fl=True)
+    faces_to_delete = list(set(all_faces) - set(selected_faces))
+    cmds.delete(faces_to_delete)
+    
+    # Now separate the remaining faces into a new object
+    new_meshes = cmds.polySeparate(duplicated_object, ch=False)
+    
+    # The desired mesh should be the last one in the list, but we will check the number of faces to be sure
+    new_mesh = None
+    for mesh in new_meshes:
+        if cmds.polyEvaluate(mesh, face=True) > 0:
+            new_mesh = mesh
+            break
+    
+    # If a valid mesh was found, rename it
+    if new_mesh:
+        new_mesh = cmds.rename(new_mesh, new_mesh_name)
+    
+    return new_mesh
 
 # Usage example:
-face_name = 'yourMesh.f[faceIndex]'  # Replace with your mesh name and face index
-center = get_face_center(face_name)
-print("Center of the face is:", center)
+# Select the faces you want to make into a new mesh before running this function
+new_mesh = create_mesh_from_selected_faces('clone')
+if new_mesh:
+    print("New mesh created:", new_mesh)
