@@ -1,21 +1,23 @@
 import maya.cmds as cmds
 
-def soften_mesh_edges(mesh_name, angle=180):
-    """
-    Soften the edges of the given mesh.
+def average_border_normals(mesh_cells):
+    # Iterate over all cells
+    for cell in mesh_cells:
+        # Get border edges of the current cell
+        border_edges = cmds.polyListComponentConversion(cell, toEdge=True, border=True)
+        border_edges = cmds.filterExpand(border_edges, selectionMask=32)  # Expand selection to edges only
 
-    :param mesh_name: str, the name of the mesh whose edges will be softened
-    :param angle: float, the angle threshold to soften the edges
-    """
-    # Select all edges of the mesh
-    cmds.select(f'{mesh_name}.e[*]', r=True)
-    
-    # Soften the edges
-    cmds.polySoftEdge(angle=angle, constructionHistory=False)
+        # Convert border edges to vertices
+        border_verts = cmds.polyListComponentConversion(border_edges, toVertex=True)
+        border_verts = cmds.filterExpand(border_verts, selectionMask=31)  # Expand selection to vertices only
+
+        # Average normals for these border vertices
+        cmds.select(border_verts)
+        cmds.polyNormalPerVertex(normalize=True)
 
     # Clear the selection
     cmds.select(clear=True)
 
-# Example usage:
-mesh_name = 'pCube1'  # Replace with the name of your mesh
-soften_mesh_edges(mesh_name)
+# Example usage
+mesh_cells = ['cell1', 'cell2', 'cell3', ...]  # Replace with your actual cell names
+average_border_normals(mesh_cells)
