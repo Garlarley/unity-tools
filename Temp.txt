@@ -1,28 +1,23 @@
 import maya.cmds as cmds
+import time  # Only for demonstration purposes (e.g., simulating a long task)
 
-def delete_unselected_faces():
-    # Get the currently selected faces
-    selected_faces = cmds.ls(sl=True, fl=True)
-    
-    if not selected_faces:
-        cmds.warning("No faces are selected.")
-        return
-    
-    # Assuming that all selected faces belong to the same mesh
-    # Extract the mesh name from the first selected face
-    mesh_name = selected_faces[0].split('.')[0]
+# Create a progress bar window
+if cmds.window('progressBarWindow', exists=True):
+    cmds.deleteUI('progressBarWindow', window=True)
 
-    # Get all faces of the mesh
-    all_faces = cmds.ls(f'{mesh_name}.f[*]', fl=True)
-    
-    # Determine the unselected faces by finding the difference
-    unselected_faces = list(set(all_faces) - set(selected_faces))
-    
-    # Delete the unselected faces
-    if unselected_faces:
-        cmds.delete(unselected_faces)
-    else:
-        cmds.warning("No unselected faces to delete.")
+cmds.window('progressBarWindow', title='Progress Bar Example')
+cmds.columnLayout()
+progress_control = cmds.progressBar(maxValue=100, width=300)
 
-# Call the function
-delete_unselected_faces()
+cmds.showWindow('progressBarWindow')
+
+# Simulate a long process with a loop
+for i in range(100):
+    # Here you'd put your actual processing code
+    time.sleep(0.1)  # Simulate time-consuming task
+
+    # Update the progress bar
+    cmds.progressBar(progress_control, edit=True, step=1)
+
+# Once the process is complete, you can delete the progress bar window
+cmds.deleteUI('progressBarWindow', window=True)
