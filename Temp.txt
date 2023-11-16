@@ -1,23 +1,31 @@
 import maya.cmds as cmds
 
-def average_border_normals(mesh_cells):
-    # Iterate over all cells
-    for cell in mesh_cells:
-        # Get border edges of the current cell
-        border_edges = cmds.polyListComponentConversion(cell, toEdge=True, border=True)
-        border_edges = cmds.filterExpand(border_edges, selectionMask=32)  # Expand selection to edges only
+# Replace 'extractedMesh' with the name of your extracted mesh
+extractedMesh = 'extractedMesh'
+# Replace 'originalMesh' with the name of your original terrain mesh
+originalMesh = 'originalMesh'
 
-        # Convert border edges to vertices
-        border_verts = cmds.polyListComponentConversion(border_edges, toVertex=True)
-        border_verts = cmds.filterExpand(border_verts, selectionMask=31)  # Expand selection to vertices only
+# Unlock the normals on both meshes
+cmds.polyNormalPerVertex(extractedMesh, unFreezeNormal=True)
+cmds.polyNormalPerVertex(originalMesh, unFreezeNormal=True)
 
-        # Average normals for these border vertices
-        cmds.select(border_verts)
-        cmds.polyNormalPerVertex(normalize=True)
+# Soften the edge normals on both meshes
+cmds.polySoftEdge(extractedMesh, angle=180)
+cmds.polySoftEdge(originalMesh, angle=180)
 
-    # Clear the selection
-    cmds.select(clear=True)
+# Average normals along the border edges if necessary
+# This step may require you to specify the border edges explicitly
+borderEdges = cmds.polyListComponentConversion(
+    [extractedMesh, originalMesh], 
+    fromFace=True, 
+    toEdge=True, 
+    border=True
+)
+borderEdges = cmds.filterExpand(borderEdges, selectionMask=32, expand=True)
+if borderEdges:
+    cmds.polyAverageNormal(borderEdges, averageNormalType=0, averageNormalArea=2)
 
-# Example usage
-mesh_cells = ['cell1', 'cell2', 'cell3', ...]  # Replace with your actual cell names
-average_border_normals(mesh_cells)
+# Merge vertices if they are separate
+# This step assumes the vertices are close enough to merge without altering the mesh form
+cmds.select([extractedMesh, originalMesh])
+cmds.polyMergeVertex(d=0.01, am=1, ch=True)
