@@ -12,22 +12,25 @@ def get_face_center(face_name):
     dag_path = selectionList.getDagPath(0)
     dag_path.extendToShape()
 
+    # Initialize the MFnMesh function set
     mesh_fn = OpenMaya.MFnMesh(dag_path)
 
     # Create an iterator for the specified face
     face_iter = OpenMaya.MItMeshPolygon(dag_path)
 
+    # Jump to the specified face in the iterator
+    face_iter.setIndex(face_index)
+
+    # Get the points (vertices) of the face in world space
+    points = face_iter.getPoints(OpenMaya.MSpace.kWorld)
+
     # Calculate the centroid of the face
     centroid = OpenMaya.MPoint()
-    face_iter.setIndex(face_index)
-    points = OpenMaya.MPointArray()
-    face_iter.getPoints(points, OpenMaya.MSpace.kWorld)
-
-    for i in range(points.length()):
+    num_points = points.length()
+    for i in range(num_points):
         centroid += points[i]
+    centroid /= num_points
 
-    centroid /= points.length()
-    
     return (centroid.x, centroid.y, centroid.z)
 
 # Example usage
