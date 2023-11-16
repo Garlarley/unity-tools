@@ -1,33 +1,21 @@
-import maya.api.OpenMaya as OpenMaya
+import maya.cmds as cmds
 
-def get_bounding_box(mesh_name):
-    # Get the selection list
-    selection_list = OpenMaya.MSelectionList()
-    selection_list.add(mesh_name)
-    
-    # Get the MDagPath object for the mesh
-    dag_path = selection_list.getDagPath(0)
-    dag_path.extendToShape()
-    
-    # Get the MFnDagNode function set for the mesh
-    dag_node = OpenMaya.MFnDagNode(dag_path)
-    
-    # Get the bounding box
-    bounding_box = dag_node.boundingBox
-    
-    # Get the min and max points of the bounding box
-    min_point = bounding_box.min
-    max_point = bounding_box.max
-    
-    # Return the bounding box as a dictionary
-    bbox = {
-        'minX': min_point.x, 'minY': min_point.y, 'minZ': min_point.z,
-        'maxX': max_point.x, 'maxY': max_point.y, 'maxZ': max_point.z
-    }
-    
-    return bbox
+def soften_mesh_edges(mesh_name, angle=180):
+    """
+    Soften the edges of the given mesh.
 
-# Example usage
-mesh_name = 'pCube1'  # Replace with your actual mesh name
-bbox = get_bounding_box(mesh_name)
-print("Bounding Box:", bbox)
+    :param mesh_name: str, the name of the mesh whose edges will be softened
+    :param angle: float, the angle threshold to soften the edges
+    """
+    # Select all edges of the mesh
+    cmds.select(f'{mesh_name}.e[*]', r=True)
+    
+    # Soften the edges
+    cmds.polySoftEdge(angle=angle, constructionHistory=False)
+
+    # Clear the selection
+    cmds.select(clear=True)
+
+# Example usage:
+mesh_name = 'pCube1'  # Replace with the name of your mesh
+soften_mesh_edges(mesh_name)
