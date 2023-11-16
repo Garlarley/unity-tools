@@ -1,46 +1,28 @@
 import maya.cmds as cmds
 
-def slice_and_separate_mesh(cell_size, original_mesh):
-    bounding_box = cmds.exactWorldBoundingBox(original_mesh)
-    # Calculate the number of cuts needed
-    num_cuts_x = int((bounding_box[3] - bounding_box[0]) / cell_size)
-    num_cuts_y = int((bounding_box[4] - bounding_box[1]) / cell_size)
+def delete_unselected_faces():
+    # Get the currently selected faces
+    selected_faces = cmds.ls(sl=True, fl=True)
     
-    # List to hold all the faces for each cell
-    cells = {}
+    if not selected_faces:
+        cmds.warning("No faces are selected.")
+        return
+    
+    # Assuming that all selected faces belong to the same mesh
+    # Extract the mesh name from the first selected face
+    mesh_name = selected_faces[0].split('.')[0]
 
-    # Iterate over the mesh to collect face IDs for each cell
-    for i in range(num_cuts_x):
-        for j in range(num_cuts_y):
-            # Calculate cell boundaries
-            min_x = bounding_box[0] + i * cell_size
-            max_x = min_x + cell_size
-            min_y = bounding_box[1] + j * cell_size
-            max_y = min_y + cell_size
-            # Find faces within this cell
-            cells[(i, j)] = []
-            for face_id in range(cmds.polyEvaluate(original_mesh, face=True)):
-                face = '{}.f[{}]'.format(original_mesh, face_id)
-                centroid = cmds.polyEvaluate(face, bc=True)
-                centroid_x = (centroid[0][0] + centroid[0][1]) / 2
-                centroid_y = (centroid[1][0] + centroid[1][1]) / 2
-                if min_x <= centroid_x <= max_x and min_y <= centroid_y <= max_y:
-                    cells[(i, j)].append(face_id)
+    # Get all faces of the mesh
+    all_faces = cmds.ls(f'{mesh_name}.f[*]', fl=True)
+    
+    # Determine the unselected faces by finding the difference
+    unselected_faces = list(set(all_faces) - set(selected_faces))
+    
+    # Delete the unselected faces
+    if unselected_faces:
+        cmds.delete(unselected_faces)
+    else:
+        cmds.warning("No unselected faces to delete.")
 
-    # Now separate the faces into new meshes
-    for key, face_ids in cells.items():
-        if face_ids:
-            # Build a list of face names
-            face_names = ['{}.f[{}]'.format(original_mesh, fid) for fid in face_ids]
-            # Select faces and duplicate them into a new mesh
-            cmds.select(face_names, r=True)
-            duplicated_faces = cmds.duplicate(rr=True)
-            new_mesh = cmds.polySeparate(duplicated_faces, ch=False)[0]
-            # Rename the new mesh to match the cell coordinates
-            new_mesh_name = 'Cell_{}_{}'.format(key[0], key[1])
-            cmds.rename(new_mesh, new_mesh_name)
-
-# Example usage
-original_mesh = 'pCube1'  # Replace with your actual mesh name
-cell_size = 1.0  # Replace with your desired cell size
-slice_and_separate_mesh(cell_size, original_mesh)
+# Call the function
+delete_unselected_faces()
