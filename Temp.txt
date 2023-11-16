@@ -1,24 +1,7 @@
-cleanup_args = {
-    'selection': 0,
-    'constructionHistory': 1,
-    'keepBorderEdge': 1,
-    'keepHardEdge': 0,
-    'keepCreaseEdge': 0,
-    'checkNonManifoldVertices': 0,
-    'checkNonManifoldEdges': 0,
-    'checkNonPlanarFaces': 1,
-    'checkNgons': 1,
-    'faceAreaTolerance': 1e-05,
-    'faceAreaThreshold': 0,
-    'faceAspectRatioTolerance': 1e-05,
-    'faceAspectRatioThreshold': 0,
-    'facePlanarityTolerance': 1e-05,
-    'facePlanarityThreshold': 0,
-    'edgeLengthTolerance': -2,
-    'edgeLengthThreshold': 1,
-    'laminaFaces': 0,
-    'nonManifoldVertices': 1,
-    'nonManifoldEdges': 0,
-    'zeroGeometryFaces': 0
-}
-cmds.polyCleanupArgList(4, cleanup_args)
+import maya.mel as mel
+
+# Your MEL command as a string
+mel_command = 'expandPolyGroupSelection; polyCleanupArgList 4 { "0","1","1","0","0","0","0","0","1","1e-05","0","1e-05","0","1e-05","0","-2","1","0" };'
+
+# Evaluate the MEL command
+mel.eval(mel_command)
