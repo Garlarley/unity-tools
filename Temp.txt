@@ -1,47 +1,24 @@
-from maya.api import OpenMaya
-
-def update_face_index(mesh_name, old_centroid):
-    # Ensure the mesh has the '.f' suffix indicating face components
-    if ".f" not in mesh_name:
-        mesh_name += ".f[*]"
-
-    # Get the MDagPath for the mesh shape node
-    selectionList = OpenMaya.MSelectionList()
-    selectionList.add(mesh_name)
-    dag_path = selectionList.getDagPath(0)
-    dag_path.extendToShape()
-
-    # Initialize the MFnMesh function set
-    mesh_fn = OpenMaya.MFnMesh(dag_path)
-
-    # Create an iterator for all faces
-    face_iter = OpenMaya.MItMeshPolygon(dag_path)
-
-    closest_face_index = None
-    closest_distance = float('inf')
-
-    # Iterate over all faces to find the closest one to the old centroid
-    while not face_iter.isDone():
-        points = face_iter.getPoints(OpenMaya.MSpace.kWorld)
-
-        # Calculate the centroid of the current face
-        centroid = OpenMaya.MPoint()
-        num_points = len(points)
-        for point in points:
-            centroid += point
-        centroid /= num_points
-
-        # Compute the distance to the old centroid
-        distance = (centroid - old_centroid).length()
-        if distance < closest_distance:
-            closest_distance = distance
-            closest_face_index = face_iter.index()
-
-        face_iter.next(None)
-
-    return closest_face_index
-
-# Example usage:
-# After a merge, get the new face index closest to the old centroid
-old_centroid = OpenMaya.MPoint(centroid_x, centroid_y, centroid_z)  # Replace with your actual values
-new_face_index = update_face_index('yourMeshName', old_centroid)
+cleanup_args = {
+    'selection': 0,
+    'constructionHistory': 1,
+    'keepBorderEdge': 1,
+    'keepHardEdge': 0,
+    'keepCreaseEdge': 0,
+    'checkNonManifoldVertices': 0,
+    'checkNonManifoldEdges': 0,
+    'checkNonPlanarFaces': 1,
+    'checkNgons': 1,
+    'faceAreaTolerance': 1e-05,
+    'faceAreaThreshold': 0,
+    'faceAspectRatioTolerance': 1e-05,
+    'faceAspectRatioThreshold': 0,
+    'facePlanarityTolerance': 1e-05,
+    'facePlanarityThreshold': 0,
+    'edgeLengthTolerance': -2,
+    'edgeLengthThreshold': 1,
+    'laminaFaces': 0,
+    'nonManifoldVertices': 1,
+    'nonManifoldEdges': 0,
+    'zeroGeometryFaces': 0
+}
+cmds.polyCleanupArgList(4, cleanup_args)
