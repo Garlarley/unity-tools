@@ -4,6 +4,10 @@ import maya.api.OpenMaya as om
 # Replace 'yourMesh' with the name of your mesh
 mesh_name = 'yourMesh'
 
+# Set a small merge threshold
+merge_threshold = 0.001  # Adjust this value as needed
+cmds.polyMergeVertex(d=merge_threshold)
+
 # Get the MSelectionList for the mesh
 selection_list = om.MSelectionList()
 selection_list.add(mesh_name)
@@ -46,12 +50,11 @@ while not all_vertices.isDone():
                 min_distance = distance
                 closest_border_vertex = border_vert_index
         
-        # Merge this non-border vertex to the closest border vertex
-        if closest_border_vertex is not None:
-            cmds.select(f"{mesh_name}.vtx[{all_vertices.index()}]", r=True)
-            cmds.select(f"{mesh_name}.vtx[{closest_border_vertex}]", tgl=True)
-            cmds.polyMergeVertex(d=min_distance)
-            
+        # If the closest border vertex is within the merge threshold, select and merge
+        if closest_border_vertex is not None and min_distance <= merge_threshold:
+            cmds.select(f"{mesh_name}.vtx[{all_vertices.index()}]", f"{mesh_name}.vtx[{closest_border_vertex}]")
+            cmds.polyMergeVertex()
+
     all_vertices.next()
 
 # Clear the selection
