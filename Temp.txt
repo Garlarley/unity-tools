@@ -17,24 +17,42 @@ mfn_mesh = om.MFnMesh(dag_path)
 # Get all vertices of the mesh
 all_vertices = om.MItMeshVertex(dag_path)
 
-# Prepare a list for vertices that are not on the border
-non_border_vertices = []
+# Prepare a list for border vertices and their positions
+border_vertices = []
+border_positions = []
 
-# Iterate through all vertices
+# Iterate through all vertices to find border vertices
 while not all_vertices.isDone():
-    # Check if the current vertex is on the border
-    if not all_vertices.onBoundary():
-        # If it's not on the border, add it to the list
+    if all_vertices.onBoundary():
         index = all_vertices.index()
-        non_border_vertices.append(f'{mesh_name}.vtx[{index}]')
-    
-    # Move to the next vertex
+        border_vertices.append(index)
+        border_positions.append(all_vertices.position(om.MSpace.kWorld))
     all_vertices.next()
 
-# Merge internal vertices only using cmds.polyMergeVertex
-if non_border_vertices:
-    cmds.select(non_border_vertices)
-    cmds.polyMergeVertex(d=0.1)  # Set the distance threshold appropriately
+# Reset the iterator
+all_vertices.reset()
+
+# Iterate through all vertices to find non-border vertices
+while not all_vertices.isDone():
+    if not all_vertices.onBoundary():
+        non_border_position = all_vertices.position(om.MSpace.kWorld)
+        closest_border_vertex = None
+        min_distance = float('inf')
+        
+        # Find the closest border vertex
+        for border_vert_index, border_position in zip(border_vertices, border_positions):
+            distance = (non_border_position - border_position).length()
+            if distance < min_distance:
+                min_distance = distance
+                closest_border_vertex = border_vert_index
+        
+        # Merge this non-border vertex to the closest border vertex
+        if closest_border_vertex is not None:
+            cmds.select(f"{mesh_name}.vtx[{all_vertices.index()}]", r=True)
+            cmds.select(f"{mesh_name}.vtx[{closest_border_vertex}]", tgl=True)
+            cmds.polyMergeVertex(d=min_distance)
+            
+    all_vertices.next()
 
 # Clear the selection
 cmds.select(clear=True)
