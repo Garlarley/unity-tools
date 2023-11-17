@@ -1,4 +1,32 @@
 import maya.cmds as cmds
+import os
+
+# Set your directory path where you want to save the FBX files
+directory_path = '/path/to/your/directory'  # e.g., 'C:/exports/'
+
+# Ensure the directory exists
+if not os.path.exists(directory_path):
+    os.makedirs(directory_path)
+
+# List all objects whose name starts with "Cell_"
+cell_objects = cmds.ls("Cell_*")
+
+# Iterate through each object
+for obj in cell_objects:
+    # Select the object
+    cmds.select(obj)
+    
+    # Define the path to the file
+    fbx_path = os.path.join(directory_path, f"{obj}.fbx")
+    
+    # Export the selected object to an FBX file
+    cmds.file(fbx_path, force=True, options="v=0;", type="FBX export", exportSelected=True)
+    
+    print(f"Exported {obj} to {fbx_path}")
+
+print("Exporting done.")
+
+import maya.cmds as cmds
 
 def create_slice_mesh_ui():
     window_name = "sliceMeshWindow"
