@@ -1,40 +1,40 @@
 import maya.cmds as cmds
-import math
+import maya.api.OpenMaya as om
 
-# Your array of clones and child cells
-clones = ['clone1', 'clone2', 'clone3']  # Replace with your actual clone names
-child_cells = ['cell1', 'cell2', 'cell3']  # Replace with your actual child cell names
+# Replace 'yourMesh' with the name of your mesh
+mesh_name = 'yourMesh'
 
-def get_pivot_position(obj_name):
-    # This function returns the world space position of the object's pivot
-    return cmds.xform(obj_name, query=True, rotatePivot=True, worldSpace=True)
+# Get the MSelectionList for the mesh
+selection_list = om.MSelectionList()
+selection_list.add(mesh_name)
 
-def calculate_distance(pos1, pos2):
-    # This function calculates the distance between two points in space
-    return math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2 + (pos1[2] - pos2[2]) ** 2)
+# Get the MDagPath for the mesh
+dag_path = selection_list.getDagPath(0)
 
-# Iterate through each clone
-for clone in clones:
-    closest_cell = None
-    min_distance = None
+# Create an MFnMesh on the dagPath
+mfn_mesh = om.MFnMesh(dag_path)
 
-    # Get the pivot position of the clone
-    clone_pivot = get_pivot_position(clone)
+# Get all vertices of the mesh
+all_vertices = om.MItMeshVertex(dag_path)
 
-    # Search for the closest child_cell
-    for child_cell in child_cells:
-        # Get the pivot position of the child cell
-        child_cell_pivot = get_pivot_position(child_cell)
-        
-        # Calculate the distance between clone and child cell
-        distance = calculate_distance(clone_pivot, child_cell_pivot)
+# Prepare a list for vertices that are not on the border
+non_border_vertices = []
 
-        # If this is the first cell checked or if this cell is closer than the previous closest, update the closest cell
-        if min_distance is None or distance < min_distance:
-            closest_cell = child_cell
-            min_distance = distance
+# Iterate through all vertices
+while not all_vertices.isDone():
+    # Check if the current vertex is on the border
+    if not all_vertices.onBoundary():
+        # If it's not on the border, add it to the list
+        index = all_vertices.index()
+        non_border_vertices.append(f'{mesh_name}.vtx[{index}]')
+    
+    # Move to the next vertex
+    all_vertices.next()
 
-    # Parent the clone to the closest child cell
-    if closest_cell:
-        cmds.parent(clone, closest_cell)
-        print(f"Parented {clone} to {closest_cell} which was the closest with a distance of {min_distance}")
+# Merge internal vertices only using cmds.polyMergeVertex
+if non_border_vertices:
+    cmds.select(non_border_vertices)
+    cmds.polyMergeVertex(d=0.1)  # Set the distance threshold appropriately
+
+# Clear the selection
+cmds.select(clear=True)
