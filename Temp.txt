@@ -1,3 +1,69 @@
-# Move the non-border vertex to the border vertex position
-border_vertex_position = mfn_mesh.getPoint(closest_border_vertex, om.MSpace.kWorld)
-cmds.xform(f'{mesh_name}.vtx[{i}]', translation=(border_vertex_position.x, border_vertex_position.y, border_vertex_position.z), worldSpace=True)
+import maya.cmds as cmds
+import maya.api.OpenMaya as om
+
+# Replace 'yourMesh' with the name of your mesh
+mesh_name = 'yourMesh'
+
+# Define the threshold distance
+threshold_distance = 0.1  # Adjust this value based on your requirement
+
+# Get the MSelectionList for the mesh
+selection_list = om.MSelectionList()
+selection_list.add(mesh_name)
+
+# Get the MDagPath for the mesh
+dag_path = selection_list.getDagPath(0)
+
+# Create an MFnMesh on the dagPath
+mfn_mesh = om.MFnMesh(dag_path)
+
+# Get all vertices of the mesh
+all_vertices = om.MItMeshVertex(dag_path)
+
+# Prepare a list for border vertices
+border_vertices = []
+
+# Iterate through all vertices to find border vertices
+while not all_vertices.isDone():
+    if all_vertices.onBoundary():
+        border_vertices.append(all_vertices.index())
+    all_vertices.next()
+
+# Reset the iterator
+all_vertices.reset()
+
+# Iterate through all vertices to find non-border vertices and merge them to border vertices if within threshold
+for i in range(mfn_mesh.numVertices):
+    # Skip border vertices
+    if i in border_vertices:
+        continue
+    
+    # Get the position of the non-border vertex
+    non_border_vertex_position = mfn_mesh.getPoint(i, om.MSpace.kWorld)
+
+    # Find the closest border vertex
+    closest_border_vertex = None
+    closest_distance = float('inf')
+    
+    for bv in border_vertices:
+        border_vertex_position = mfn_mesh.getPoint(bv, om.MSpace.kWorld)
+        distance = (non_border_vertex_position - border_vertex_position).length()
+        if distance < closest_distance:
+            closest_distance = distance
+            closest_border_vertex = bv
+    
+    # If the closest border vertex is within the threshold, move the non-border vertex to it and merge
+    if closest_distance <= threshold_distance:
+        # Move the non-border vertex to the border vertex position
+        border_vertex_position = mfn_mesh.getPoint(closest_border_vertex, om.MSpace.kWorld)
+        cmds.xform(f'{mesh_name}.vtx[{i}]', translation=(border_vertex_position.x, border_vertex_position.y, border_vertex_position.z), worldSpace=True)
+        
+        # Merge the vertices
+        # Ensure we only have the two vertices selected that we want to merge
+        cmds.select(clear=True)
+        cmds.select(f'{mesh_name}.vtx[{i}]')
+        cmds.select(f'{mesh_name}.vtx[{closest_border_vertex}]', toggle=True)
+        cmds.polyMergeVertex()
+
+# Clear the selection
+cmds.select(clear=True)
