@@ -1,1 +1,13 @@
+# Select the object
+cmds.select(objectName)
 
+# Freeze transformations
+cmds.makeIdentity(apply=True, t=1, r=1, s=1, n=0)
+
+# Delete history
+cmds.delete(all=True, constructionHistory=True)
+
+# Export the selected object
+# Replace 'file_path' with the desired file path to export to
+file_path = '/path/to/your/exported_file.fbx'
+cmds.file(file_path, force=True, options="v=0;", typ="FBX export", pr=True, es=True)
