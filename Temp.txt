@@ -1,1 +1,26 @@
+import maya.cmds as cmds
 
+# Get the selected objects
+selection = cmds.ls(selection=True)
+
+# Check if something is selected
+if selection:
+    # Iterate over selected objects
+    for selected_object in selection:
+        # Get the bounding box of the object
+        # This returns a list of six values in the order [xmin, ymin, zmin, xmax, ymax, zmax]
+        bounding_box = cmds.xform(selected_object, query=True, worldSpace=True, boundingBox=True)
+        
+        # Calculate the center for X and Z dimensions
+        center_x = (bounding_box[0] + bounding_box[3]) / 2.0
+        center_z = (bounding_box[2] + bounding_box[5]) / 2.0
+
+        # Get the current pivot Y position to leave it unchanged
+        pivot_y = cmds.xform(selected_object, query=True, worldSpace=True, rotatePivot=True)[1]
+
+        # Move the pivot to the new center (X and Z only, Y remains the same)
+        cmds.xform(selected_object, worldSpace=True, pivots=(center_x, pivot_y, center_z))
+        
+        print(f"Pivot for {selected_object} centered in X and Z dimensions.")
+else:
+    print("No objects selected.")
