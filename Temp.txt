@@ -1,1 +1,31 @@
+public MeshCollider meshCollider;
 
+    public Vector3 FindClosestPoint(Vector3 toPoint)
+    {
+        Mesh mesh = meshCollider.sharedMesh;
+        Vector3 closestPoint = Vector3.positiveInfinity;
+        float closestDistanceSqr = Mathf.Infinity;
+
+        for (int i = 0; i < mesh.triangles.Length; i += 3)
+        {
+            Vector3 vertex1 = mesh.vertices[mesh.triangles[i]];
+            Vector3 vertex2 = mesh.vertices[mesh.triangles[i + 1]];
+            Vector3 vertex3 = mesh.vertices[mesh.triangles[i + 2]];
+
+            Transform meshTransform = meshCollider.transform;
+            vertex1 = meshTransform.TransformPoint(vertex1);
+            vertex2 = meshTransform.TransformPoint(vertex2);
+            vertex3 = meshTransform.TransformPoint(vertex3);
+
+            Vector3 closestPointOnTri = ClosestPointOnTriangleToPoint(vertex1, vertex2, vertex3, toPoint);
+            float distSqr = (closestPointOnTri - toPoint).sqrMagnitude;
+
+            if (distSqr < closestDistanceSqr)
+            {
+                closestDistanceSqr = distSqr;
+                closestPoint = closestPointOnTri;
+            }
+        }
+
+        return closestPoint;
+    }
