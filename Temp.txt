@@ -1,31 +1,49 @@
-public MeshCollider meshCollider;
+private Vector3 ClosestPointOnTriangleToPoint(Vector3 a, Vector3 b, Vector3 c, Vector3 p)
+{
+    // Compute vectors
+    Vector3 v0 = c - a;
+    Vector3 v1 = b - a;
+    Vector3 v2 = p - a;
 
-    public Vector3 FindClosestPoint(Vector3 toPoint)
+    // Compute dot products
+    float dot00 = Vector3.Dot(v0, v0);
+    float dot01 = Vector3.Dot(v0, v1);
+    float dot02 = Vector3.Dot(v0, v2);
+    float dot11 = Vector3.Dot(v1, v1);
+    float dot12 = Vector3.Dot(v1, v2);
+
+    // Compute barycentric coordinates
+    float invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+    float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+    float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+    // Check if point is in triangle
+    if (u >= 0 && v >= 0 && u + v < 1)
     {
-        Mesh mesh = meshCollider.sharedMesh;
-        Vector3 closestPoint = Vector3.positiveInfinity;
-        float closestDistanceSqr = Mathf.Infinity;
-
-        for (int i = 0; i < mesh.triangles.Length; i += 3)
-        {
-            Vector3 vertex1 = mesh.vertices[mesh.triangles[i]];
-            Vector3 vertex2 = mesh.vertices[mesh.triangles[i + 1]];
-            Vector3 vertex3 = mesh.vertices[mesh.triangles[i + 2]];
-
-            Transform meshTransform = meshCollider.transform;
-            vertex1 = meshTransform.TransformPoint(vertex1);
-            vertex2 = meshTransform.TransformPoint(vertex2);
-            vertex3 = meshTransform.TransformPoint(vertex3);
-
-            Vector3 closestPointOnTri = ClosestPointOnTriangleToPoint(vertex1, vertex2, vertex3, toPoint);
-            float distSqr = (closestPointOnTri - toPoint).sqrMagnitude;
-
-            if (distSqr < closestDistanceSqr)
-            {
-                closestDistanceSqr = distSqr;
-                closestPoint = closestPointOnTri;
-            }
-        }
-
-        return closestPoint;
+        return a + u * v0 + v * v1;
     }
+
+    // Else get the closest point on edges or vertices of the triangle
+    Vector3 closestPoint = ClosestPointOnLineSegment(a, b, p);
+    Vector3 pointOnAB = ClosestPointOnLineSegment(a, c, p);
+    Vector3 pointOnAC = ClosestPointOnLineSegment(b, c, p);
+
+    if ((pointOnAB - p).sqrMagnitude < (closestPoint - p).sqrMagnitude)
+    {
+        closestPoint = pointOnAB;
+    }
+
+    if ((pointOnAC - p).sqrMagnitude < (closestPoint - p).sqrMagnitude)
+    {
+        closestPoint = pointOnAC;
+    }
+
+    return closestPoint;
+}
+
+private Vector3 ClosestPointOnLineSegment(Vector3 a, Vector3 b, Vector3 p)
+{
+    Vector3 ab = b - a;
+    float t = Vector3.Dot(p - a, ab) / Vector3.Dot(ab, ab);
+    return a + Mathf.Clamp01(t) * ab;
+}
